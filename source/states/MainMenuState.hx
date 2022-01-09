@@ -13,10 +13,18 @@ import ui.MenuItem;
 
 class MainMenuState extends flixel.FlxState
 {
-    var cheese:FlxTiledSprite;
-    public static var textMenuItems:Array<String> = ['Single Player', 'Race Mode', "Gallery", 'Options', 'Credits']; 
+    public static var textMenuItems:Array<String> = [
+        'Adventure Mode',
+        'Race Mode',
+        'Gallery',
+        'Options',
+        'Credits'
+    ]; 
 
-    override function create() {
+    var cheese:FlxTiledSprite;
+
+    override function create()
+    {
         FlxG.autoPause = false;
         FlxG.sound.playMusic('assets/music/ultracheddar' + BootState.soundEXT, OptionsSubState.masterVol * OptionsSubState.musicVol);
 
@@ -28,12 +36,10 @@ class MainMenuState extends flixel.FlxState
         cheese.scrollY = 10;
         add(cheese);
 
-       
         persistentDraw = persistentUpdate = true;
 
         openSubState(new MenuBackend(textMenuItems));
         
-
         super.create();
     }
 

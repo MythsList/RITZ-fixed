@@ -21,9 +21,7 @@ import ui.Controls;
 import ui.DialogueSubstate;
 import ui.DeviceManager;
 import ui.pause.PauseSubstate;
-
 import io.newgrounds.NG;
-
 import flixel.FlxBasic;
 import flixel.FlxCamera;
 import flixel.FlxG;
@@ -35,9 +33,8 @@ import flixel.math.FlxPoint;
 import flixel.math.FlxRect;
 import flixel.tweens.FlxEase;
 import flixel.util.FlxColor;
-
+import flixel.util.FlxTimer;
 import flixel.addons.display.FlxBackdrop;
-
 using zero.utilities.OgmoUtils;
 using zero.flixel.utilities.FlxOgmoUtils;
 
@@ -68,12 +65,15 @@ class PlayState extends flixel.FlxState
 	
 	var musicName:String;
 
-	var gaveCheese = false;
+	public static var isRace:Bool = false;
+	public static var curLevel:Int = 0;
+
+	var gaveCheese:Bool = false;
 	var cheeseCountText:BitmapText;
 	var dialogueBubble:FlxSprite;
-	var cheeseCount = 0;
-	var cheeseNeeded = 0;
-	var totalCheese = 0;
+	var cheeseCount:Int = 0;
+	var cheeseNeeded:Int = 0;
+	var totalCheese:Int = 0;
 	var curCheckpoint:Checkpoint;
 	var cheeseNeededText:LockAmountText;
 	
@@ -97,19 +97,20 @@ class PlayState extends flixel.FlxState
 		dialogueBubble = new FlxSprite().loadGraphic("assets/images/dialogue.png", true, 32, 32);
 		dialogueBubble.animation.add('play', [0, 1, 2, 3], 6);
 		dialogueBubble.animation.play('play');
-		add(dialogueBubble);
 		dialogueBubble.visible = false;
+		add(dialogueBubble);
 		
 		FlxG.worldBounds.set(0, 0, 0, 0);
-		FlxG.cameras.remove(FlxG.camera);
+		if (FlxG.camera != null) FlxG.cameras.remove(FlxG.camera);
 		FlxG.camera = null;
-		FlxCamera.defaultCameras = [];// Added to in createPlayer
+		FlxCamera.defaultCameras = [];
 		createInitialLevel();
 		createUI();
 	}
 	
 	function createInitialLevel()
 	{
+
 	}
 	
 	function createUI()
@@ -139,6 +140,7 @@ class PlayState extends flixel.FlxState
 		grpTilemaps.add(map);
 		
 		var worldBounds = FlxG.worldBounds;
+
 		if (map.x < worldBounds.x) worldBounds.x = map.x;
 		if (map.y < worldBounds.y) worldBounds.y = map.y;
 		if (map.x + map.width  > worldBounds.right) worldBounds.right = map.x + map.width;
@@ -152,9 +154,7 @@ class PlayState extends flixel.FlxState
 		for (decal in decalGroup.members)
 		{
 			(cast decal:FlxObject).moves = false;
-			#if debug
-			(cast decal:FlxSprite).ignoreDrawDebug = true;
-			#end
+			#if debug (cast decal:FlxSprite).ignoreDrawDebug = true; #end
 		}
 		
 		level.add(map);
@@ -274,6 +274,7 @@ class PlayState extends flixel.FlxState
 		updateCollision();
 		
 		var pauseSubstate:PauseSubstate = null;
+
 		grpPlayers.forEach
 		(
 			player->
@@ -403,9 +404,9 @@ class PlayState extends flixel.FlxState
 				var oldVol:Float = FlxG.sound.music.volume;
 				FlxG.sound.music.volume = 0.1;
 				FlxG.sound.play('assets/sounds/discoverysound' + BootState.soundEXT, 1, false, null, true, function()
-					{
-						FlxG.sound.music.volume = oldVol;
-					});
+				{
+					FlxG.sound.music.volume = oldVol;
+				});
 			}
 		});
 	}
@@ -419,7 +420,27 @@ class PlayState extends flixel.FlxState
 			if (player.x > FlxG.worldBounds.width)
 			{
 				player.state = Won;
-				FlxG.camera.fade(FlxColor.BLACK, 2, false, FlxG.switchState.bind(new EndState()));
+
+				if (isRace)
+				{
+					if (curLevel == RaceState.LEVEL_PATH.length - 1)
+						FlxG.camera.fade(FlxColor.BLACK, 2, false, FlxG.switchState.bind(new EndState()));
+					else
+					{
+						curLevel ++;
+						FlxG.camera.fade(FlxColor.BLACK, 2, false, FlxG.switchState.bind(new RaceState()));
+					}
+				}
+				else
+				{
+					if (curLevel == AdventureState.LEVEL_PATH.length - 1)
+						FlxG.camera.fade(FlxColor.BLACK, 2, false, FlxG.switchState.bind(new EndState()));
+					else
+					{
+						curLevel ++;
+						FlxG.camera.fade(FlxColor.BLACK, 2, false, FlxG.switchState.bind(new AdventureState()));
+					}
+				}
 			}
 			
 			if (SpikeObstacle.overlap(grpSpikes, player))
@@ -494,11 +515,14 @@ class PlayState extends flixel.FlxState
 			}
 		}
 	}
+
+	var canTalk:Bool = true;
 	
 	function handleCheckpoint(checkpoint:Checkpoint, player:Player)
 	{
 		var autoTalk = checkpoint.autoTalk;
 		var dialogue = checkpoint.dialogue;
+		
 		if (!gaveCheese && player.cheese.length > 0)
 		{
 			gaveCheese = true;
@@ -509,19 +533,21 @@ class PlayState extends flixel.FlxState
 		dialogueBubble.visible = true;
 		dialogueBubble.setPosition(checkpoint.x + 20, checkpoint.y - 10);
 		
-		if (player.controls.TALK || autoTalk)
+		if (player.state == Alive && (player.controls.TALK || autoTalk) && canTalk)
 		{
+			canTalk = false;
 			checkpoint.onTalk();
 			player.state = Talking;
+
 			var focalPoint = checkpoint.getGraphicMidpoint(FlxPoint.weak());
 			focalPoint.x += checkpoint.cameraOffsetX;
-			add(new ZoomDialogueSubstate
-				( dialogue
-				, focalPoint
-				, player.settings
-				, ()->player.state = Alive
-				)
-			);
+
+			var daSubstate = new ZoomDialogueSubstate(dialogue, focalPoint, player.settings, player, ()-> {
+				player.state = Alive;
+				canTalk = true;
+			});
+
+			add(daSubstate);
 		}
 		
 		if (checkpoint != curCheckpoint)
@@ -580,7 +606,6 @@ class PlayState extends flixel.FlxState
 		
 		if (FlxG.keys.justPressed.T)
 		{
-			
 			disableAllDebugDraw();
 			#if debug grpPlayers.forEach((player)->player.tail.ignoreDrawDebug = false); #end
 			FlxG.debugger.drawDebug = true;
@@ -601,6 +626,7 @@ class PlayState extends flixel.FlxState
 			player.ignoreDrawDebug = true;
 			player.tail.ignoreDrawDebug = true;
 		});
+
 		foreground.forEach((basic)->{
 			if(Std.isOfType(basic, FlxSprite))
 			{
@@ -623,7 +649,8 @@ class PlayState extends flixel.FlxState
 	private function playMusic(name:String):Void
 	{
 		FlxG.sound.playMusic('assets/music/' + name + BootState.soundEXT, 0.7);
-		switch (name)
+
+		switch(name)
 		{
 			case "pillow":
 				FlxG.sound.music.loopTime = 4450;
@@ -632,6 +659,7 @@ class PlayState extends flixel.FlxState
 				FlxG.sound.music.loopTime = 0;
 				BeatGame.beatsPerMinute = 60;//not needed
 		}
+
 		musicName = name;
 	}
 	

@@ -8,23 +8,29 @@ import props.Player;
 
 class AdventureState extends PlayState
 {
-    inline static var LEVEL_PATH = 
-        // "assets/data/ogmo/levels/dumbassLevel.json";
-        // "assets/data/ogmo/levels/normassLevel.json";
-        "assets/data/ogmo/levels/smartassLevel.json";
+    var pathPrefix:String = 'assets/data/ogmo/levels/';
+    var fileSuffix:String = '.json';
     
+    public static var LEVEL_PATH:Array<String> = [
+        // 'dumbassLevel',
+        // 'normassLevel',
+        'smartassLevel'
+    ];
+
 	var minimap:Minimap;
     
     override function create()
     {
+        PlayState.isRace = false;
+
         super.create();
         
-		minimap = new Minimap(LEVEL_PATH);
+		minimap = new Minimap(pathPrefix + LEVEL_PATH[PlayState.curLevel] + fileSuffix);
     }
     
     override function createInitialLevel()
     {
-		createLevel(LEVEL_PATH);
+		createLevel(pathPrefix + LEVEL_PATH[PlayState.curLevel] + fileSuffix);
     }
     
     override function update(elapsed:Float)
@@ -32,6 +38,7 @@ class AdventureState extends PlayState
         super.update(elapsed);
         
         var pressedMap = false;
+
         grpPlayers.forEach
         (
             player->
@@ -47,6 +54,7 @@ class AdventureState extends PlayState
     override function handleCheckpoint(checkpoint:Checkpoint, player:Player)
     {
         super.handleCheckpoint(checkpoint, player);
+
         minimap.showCheckpointGet(checkpoint.ID);
     }
     

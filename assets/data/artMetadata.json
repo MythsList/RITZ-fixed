@@ -1,8 +1,12 @@
 [
     {
-        "path": ''
+        "path": "assets/images/fanart/mikel.png",
+		"description": "Cool art!",
+		"size": 0.2
     },
-    {
-        "bullshit": "also bullshit"
+	{
+        "path": "assets/images/fanart/mikel.png",
+		"description": "Cool art but smaller!",
+		"size": 0.1
     }
 ]

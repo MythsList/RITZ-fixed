@@ -2,13 +2,11 @@ package states;
 
 import ui.Controls;
 import ui.BitmapText;
-
 import flixel.FlxG;
 import flixel.tweens.FlxEase;
 import flixel.tweens.FlxTween;
 import flixel.text.FlxText;
 import flixel.system.FlxSound;
-
 import lime.utils.Assets;
 import haxe.Json;
 
@@ -33,7 +31,6 @@ class MusicGalleryState extends flixel.FlxSubState
         this.controls = controls;
         super();
         
-
         data = Json.parse(Assets.getText('assets/data/musicMetadata.json'));
 
         txtSelectedSong = new BitmapText(20, 20, "Song");
@@ -44,10 +41,8 @@ class MusicGalleryState extends flixel.FlxSubState
         txtDescription.autoSize = false;
         add(txtDescription);
         
-
         txtCurSong = new BitmapText(20, FlxG.height - 20);
         add(txtCurSong);
-
 
         for (i in data)
         {
@@ -62,10 +57,7 @@ class MusicGalleryState extends flixel.FlxSubState
                 zeroInsert = '0';
 
             songLengths.push(minutes + ":" + zeroInsert + seconds);
-            // Math.floor(Std.parseInt(songLengths[curSelected]) / 60) + ":" + Math.round(songLengths[curSelected]);
-            trace(daSound.length / 1000);
         }
-
     }
 
     override function update(elapsed:Float) {
@@ -73,17 +65,15 @@ class MusicGalleryState extends flixel.FlxSubState
         if (controls.LEFT_P || controls.RIGHT_P)
         {
             if (controls.LEFT_P)
-                curSelected -= 1;
+                curSelected --;
+            
             if (controls.RIGHT_P)
-                curSelected += 1;
+                curSelected ++;
     
             if (curSelected < 0)
                 curSelected = data.length - 1;
-            if (curSelected >= data.length)
+            else if (curSelected >= data.length)
                 curSelected = 0;
-
-            trace(data[curSelected].description);
-
         }
 
         if (controls.BACK)
@@ -92,9 +82,6 @@ class MusicGalleryState extends flixel.FlxSubState
             FlxG.state.openSubState(new GalleryMenuState());
         }
         
-        
-
-
         txtDescription.text = data[curSelected].description;
         txtSelectedSong.text = Std.string(curSelected + 1) + ". " + data[curSelected].title + " - " + songLengths[curSelected];
 

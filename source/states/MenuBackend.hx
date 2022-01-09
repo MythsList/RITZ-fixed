@@ -4,23 +4,26 @@ import data.PlayerSettings;
 import ui.Controls;
 import ui.BitmapText;
 import ui.MenuItem;
-
 import flixel.FlxG;
 import flixel.FlxState;
+import flixel.FlxSubState;
 import flixel.FlxSprite;
 import flixel.effects.FlxFlicker;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.util.FlxColor;
 
-class MenuBackend extends flixel.FlxSubState
+class MenuBackend extends FlxSubState
 {
-    var textMenuItems:Array<String> = ['Master Volume', 'Sound Volume', 'Music Volume', 'DX OST'];
+    var textMenuItems:Array<String> = [
+        'Back'
+    ];
+
     var optionValues:Array<Dynamic> = [
         [
-            1, 1, 1, true
+        
         ],
         [
-            0, 0, 0, 0
+            0
         ]
     ]; 
     
@@ -37,19 +40,17 @@ class MenuBackend extends flixel.FlxSubState
     {
         super();
 
-        if (menuItems != null)
-            textMenuItems = menuItems;
-        if (optionItems != null)
-            optionValues = optionItems;
+        if (menuItems != null) textMenuItems = menuItems;
+        if (optionItems != null) optionValues = optionItems;
 
         grpMenuItems = new FlxTypedGroup<MenuItem>();
         
         var bullshit:Int = 0;
+
         for (text in textMenuItems)
         {
-            addMenuItem(text, bullshit, optionValues[1][Std.int(bullshit * -1)]);
-
-            bullshit--;
+            addMenuItem(text, bullshit, optionValues[1][Std.int(bullshit)]);
+            bullshit++;
         }
 
         add(grpMenuItems);
@@ -60,9 +61,9 @@ class MenuBackend extends flixel.FlxSubState
 
     public function addMenuItem(text:String, bullshit:Int, itemType:Int = 0):MenuItem
     {
-        var menuItem:MenuItem = new MenuItem(0, 0, controls, text, itemType, optionValues[0][Std.int(bullshit * -1)]);
-        menuItem.daAngle = bullshit;
-        menuItem.targetAngle = bullshit;
+        var menuItem:MenuItem = new MenuItem(0, 0, controls, text, itemType, optionValues[0][Std.int(bullshit)]);
+        menuItem.targetY = bullshit;
+
         grpMenuItems.add(menuItem);
 
         return menuItem;
@@ -70,94 +71,95 @@ class MenuBackend extends flixel.FlxSubState
 
     override function update(elapsed:Float) 
     {
-
         for (i in 0...grpMenuItems.members.length)
         {
-            if (i == curSelected)
-            {
-                grpMenuItems.members[i].isSelected = true;
-            }
-            else
-                grpMenuItems.members[i].isSelected = false;
+            grpMenuItems.members[i].isSelected = (i == curSelected ? true : false);
         }
 
-        if (controls.UP_P || controls.DOWN_P)
-        {
-            var randomSound:Int = 0;
-    
-            if (FlxG.random.bool())
-                randomSound = 2;
-    
-            if (controls.UP_P)
-            {
-                curSelected -= 1;
-                FlxG.sound.play('assets/sounds/Munchsound' + Std.string(2 + randomSound) + BootState.soundEXT);
-            }  
-            else
-            {
-    
-                curSelected += 1;
-                FlxG.sound.play('assets/sounds/Munchsound' + Std.string(1 + randomSound) + BootState.soundEXT);
-            }
-        }
-                
-            
-            if (curSelected < 0)
-                curSelected = textMenuItems.length - 1;
-            if (curSelected >= textMenuItems.length)
-                curSelected = 0;
-    
-    
-            var bullshit:Int = 0;
-            for (item in grpMenuItems.members)
-            {
-                item.targetAngle = bullshit + curSelected;
-                bullshit--;
-            }
-    
-            // 281 58
+        if (controls.UP_P)
+            changeSelection(-1);
+
+        if (controls.DOWN_P)
+            changeSelection(1);
     
         if (controls.ACCEPT && !selected && grpMenuItems.members[curSelected].itemType == MenuItem.SELECTION)
         {
+            selected = true;
             FlxG.sound.play('assets/sounds/startbleep' + BootState.soundEXT);
+
             FlxFlicker.flicker(grpMenuItems.members[curSelected], 0.5, 0.04, false, true, function(flic:FlxFlicker)
             {
                 var daText:String = textMenuItems[curSelected];
 
-                switch(daText)
+                switch(daText.toLowerCase())
                 {
-                    case 'Single Player':
-                        stateShit(new AdventureState());
-                    case 'Credits':
-                        stateShit(new EndState());
-                    case 'Race Mode':
-                        stateShit(new RaceState());
-                    case 'Gallery':
+                    case 'adventure mode':
+                        PlayState.curLevel = 0;
+                        openState(new AdventureState());
+                    case 'race mode':
+                        PlayState.curLevel = 0;
+                        openState(new RaceState());
+                    case 'credits':
+                        openState(new EndState());
+                    case 'gallery':
                         close();
+                        selected = false;
                         FlxG.state.openSubState(new GalleryMenuState());
-                    case 'Options':
+                    case 'art gallery':
+						close();
+                        selected = false;
+                        FlxG.state.openSubState(new GalleryState(controls));
+                    case 'music gallery':
+						close();
+                        selected = false;
+                        FlxG.state.openSubState(new MusicGalleryState(controls));
+                    case 'options':
                         close();
+                        selected = false;
                         FlxG.state.openSubState(new OptionsSubState());
+                    case 'back':
+                        close();
+                        selected = false;
+                        FlxG.state.openSubState(new MenuBackend(MainMenuState.textMenuItems));
                     default:
-                        trace('no UI item!');
-
+                        selected = false;
+                        trace('No button selected or no button function!');
                 }
-
-                // FlxG.sound.play('assets/sounds/ritzstartjingle' + BootState.soundEXT);
-               
             });
         }
     
-        
         super.update(elapsed);
     }
 
-    private function stateShit(daState:FlxState):Void
+    private function changeSelection(change:Int = 0):Void
+    {
+        curSelected += change;
+
+        if (change != 0)
+        {
+            var randomSound:Int = (FlxG.random.bool() ? 2 : 0);
+            FlxG.sound.play('assets/sounds/Munchsound' + Std.string((change == -1 ? 2 : 1) + randomSound) + BootState.soundEXT);
+        }
+
+        if (curSelected < 0)
+            curSelected = textMenuItems.length - 1;
+        else if (curSelected >= textMenuItems.length)
+            curSelected = 0;
+    
+        var bullshit:Int = 0;
+
+        for (item in grpMenuItems.members)
+        {
+            item.targetY = bullshit - curSelected;
+            bullshit++;
+        }
+    }
+
+    private function openState(daState:FlxState):Void
     {
         FlxG.camera.fade(FlxColor.BLACK, 2, false, function()
-            {
-                FlxG.switchState(daState);
-            });
-
+        {
+            FlxG.switchState(daState);
+        });
     }
 }

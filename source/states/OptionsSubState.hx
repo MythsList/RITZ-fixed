@@ -4,6 +4,7 @@ import flixel.effects.FlxFlicker;
 import flixel.FlxG;
 import ui.BitmapText;
 import ui.MenuItem;
+import flixel.FlxState;
 import flixel.FlxSubState;
 
 class OptionsSubState extends MenuBackend
@@ -15,26 +16,37 @@ class OptionsSubState extends MenuBackend
 
     public function new()
     {
-		var isDX:Bool = false;
-		if (DXmusic != '')
-			isDX = true;
+		var isDX:Bool = (DXmusic != '' ? true : false);
+		
+		var menuItems:Array<String> = [
+			'Master Volume',
+			'Music Volume',
+			'SFX Volume',
+			'DX OST',
+			'Back'
+		];
+	
+		var optionItems:Array<Dynamic> = [
+			[
+				masterVol * 100, musicVol * 100, soundVol * 100, isDX
+			],
+			[
+				1, 1, 1, 2, 0
+			]
+		];
 
-		super(['Master Volume', 'Music Volume', 'SFX Volume', 'DX OST', 'Back'], [[masterVol * 100, musicVol * 100, soundVol * 100, isDX], [1, 1, 1, 2, 0]]);
-
+		super(menuItems, optionItems);
 	}
 
-	override function update(elapsed:Float) {
+	override function update(elapsed:Float)
+	{
 		masterVol = grpMenuItems.members[0].percentage / 100;
 		musicVol = grpMenuItems.members[1].percentage / 100;
 		soundVol = grpMenuItems.members[2].percentage / 100;
 
-
 		var curDX:String = DXmusic;
 
-		if (grpMenuItems.members[3].isOn)
-			DXmusic = 'DX';
-		else
-			DXmusic = "";
+		DXmusic = (grpMenuItems.members[3].isOn ? 'DX' : '');
 
 		if (curDX != DXmusic)
 		{
@@ -44,25 +56,9 @@ class OptionsSubState extends MenuBackend
 	
 		FlxG.watch.addQuick('masterVol', masterVol);
 
-
 		if (FlxG.sound.music != null)
 			FlxG.sound.music.volume = masterVol * musicVol;
 
 		super.update(elapsed);
-
-		if (FlxG.keys.justPressed.SPACE && !selected && grpMenuItems.members[curSelected].itemType == MenuItem.SELECTION)
-		{
-			FlxG.sound.play('assets/sounds/startbleep' + BootState.soundEXT);
-			FlxFlicker.flicker(grpMenuItems.members[curSelected], 0.5, 0.04, false, true, function(flic:FlxFlicker)
-			{
-				var daText:String = textMenuItems[curSelected];
-				
-				if (daText == 'Back')
-				{
-					close();
-					FlxG.state.openSubState(new MenuBackend(MainMenuState.textMenuItems));
-				}
-			});
-		}
 	}
 }

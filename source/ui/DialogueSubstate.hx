@@ -1,8 +1,9 @@
 package ui;
 
+import props.Player;
+import flixel.group.FlxGroup.FlxTypedGroup;
 import data.PlayerSettings;
 import states.BootState;
-
 import flixel.FlxCamera;
 import flixel.FlxG;
 import flixel.FlxSprite;
@@ -12,53 +13,61 @@ import flixel.system.FlxAssets;
 import flixel.tweens.FlxEase;
 import flixel.tweens.FlxTween;
 import flixel.util.FlxColor;
+import flixel.group.FlxGroup;
 
 class DialogueSubstate extends flixel.FlxSubState
 {
+    public var daInterface:FlxTypedGroup<Dynamic>;
+
     public var dialogueText:TypeTextTwo;
     public var blackBarTop:FlxSprite;
     public var blackBarBottom:FlxSprite;
-    public var uiCamera:FlxCamera;
-    public var controls:Controls = null;
+    public var uiCamera:FlxCamera = null;
 
-    public function new(dialogue:String, controls:Null<Controls>, ?playerCamera:PlayCamera, startNow = true) {
+    public var controls:Controls = null;
+    public var isCreditsDialogue:Bool;
+
+    public function new(dialogue:String, controls:Null<Controls>, ?playerCamera:PlayCamera, startNow = true, delay:Float = 0.25, isCreditsDialogue:Bool = false)
+    {
         super();
+
         this.controls = controls;
-        
-        uiCamera = new FlxCamera();
-        uiCamera.x = playerCamera.x;
-        uiCamera.y = playerCamera.y;
-        uiCamera.width = playerCamera.width;
-        uiCamera.height = playerCamera.height;
-        uiCamera.bgColor = 0;
-        cameras = [uiCamera];
+        this.isCreditsDialogue = isCreditsDialogue;
+
+        var cameraSettings:Array<Dynamic> = (!isCreditsDialogue ? [playerCamera.x, playerCamera.y] : [0, 0]);
+
+        uiCamera = new FlxCamera(Std.int(cameraSettings[0]), Std.int(cameraSettings[1]), Std.int(FlxG.width), Std.int(FlxG.height));
+        uiCamera.bgColor.alpha = 0;
+
         FlxG.cameras.add(uiCamera);
-        
-        var textSize = 16;//uiCamera.width < FlxG.width ? 8 : 16;
-        dialogueText = new TypeTextTwo(0, 0, uiCamera.width, parseDialogue(dialogue), textSize);
+
+        daInterface = new FlxTypedGroup<Dynamic>();
+        add(daInterface);
+
+        dialogueText = new TypeTextTwo(0, 0, FlxG.width, parseDialogue(dialogue), 16);
         dialogueText.sounds = [FlxG.sound.load('assets/sounds/talksound' + BootState.soundEXT), FlxG.sound.load('assets/sounds/talksound1' + BootState.soundEXT)];
         dialogueText.finishSounds = true;
         dialogueText.skipKeys = [];
         dialogueText.visible = false;
         
-        blackBarBottom = new FlxSprite();
-        blackBarBottom.makeGraphic(uiCamera.width, Std.int(uiCamera.height * 0.22), FlxColor.BLACK);
-        blackBarBottom.y = uiCamera.height;
+        blackBarBottom = new FlxSprite().makeGraphic(FlxG.width, Std.int(FlxG.height * 0.22), FlxColor.BLACK);
+        blackBarBottom.y = FlxG.height;
         
         blackBarTop = new FlxSprite();
         final height = Math.max(blackBarBottom.height, dialogueText.finalHeight);
-        blackBarTop.makeGraphic(uiCamera.width, Std.int(height), FlxColor.BLACK);
+        blackBarTop.makeGraphic(FlxG.width, Std.int(height), FlxColor.BLACK);
         blackBarTop.y = -blackBarTop.height;
         
-        add(blackBarBottom);
-        add(blackBarTop);
-        add(dialogueText);
+        daInterface.add(blackBarBottom);
+        daInterface.add(blackBarTop);
+        daInterface.add(dialogueText);
+
+        daInterface.cameras = [uiCamera];
         
         FlxTween.tween(blackBarTop, {y: 0}, 0.25, {ease:FlxEase.quadIn});
-        FlxTween.tween(blackBarBottom, {y: Std.int(uiCamera.height - blackBarBottom.height)}, 0.25, {ease:FlxEase.quadIn});
+        FlxTween.tween(blackBarBottom, {y: Std.int(FlxG.height - blackBarBottom.height)}, 0.25, {ease:FlxEase.quadIn});
         
-        if (startNow)
-            start(0.25);
+        if (startNow) start(delay);
     }
     
     function parseDialogue(d:String):String
@@ -87,10 +96,13 @@ class DialogueSubstate extends flixel.FlxSubState
         dialogueText.start(delay);
     }
 
-    override function update(elapsed:Float) {
+    override function update(elapsed:Float)
+    {
+        var controlsArray:Array<Dynamic> = [];
 
-        if (dialogueText.visible
-        && controls != null && (controls.BACK || controls.ACCEPT || controls.TALK))
+        if (controls != null) controlsArray = [controls.BACK, controls.ACCEPT];
+
+        if (dialogueText.visible && ((controls != null && controlsArray.contains(true)) || (controls == null && FlxG.keys.justPressed.ANY)))
         {
             if (dialogueText.isFinished)
                 startClose();
@@ -102,17 +114,20 @@ class DialogueSubstate extends flixel.FlxSubState
     }
     
     override function close()
-    {
-        FlxG.cameras.remove(uiCamera);
-        
-        closeCallback();
+    {   
+        remove(daInterface);
+
+        if (FlxG.cameras.list.contains(uiCamera))
+            FlxG.cameras.remove(uiCamera);
+
+        super.close();
     }
     
     function startClose():Void
     {
-        FlxTween.tween(blackBarTop, {y:-blackBarTop.height}, 0.25, {ease:FlxEase.quadIn});
+        FlxTween.tween(blackBarTop, {y: -blackBarTop.height}, 0.25, {ease:FlxEase.quadIn});
         FlxTween.tween(blackBarBottom, {y: FlxG.height}, 0.25,
-            { ease:FlxEase.quadIn, onComplete: (_)->close() }
+            { ease:FlxEase.quadIn, onComplete: (_)->(!isCreditsDialogue ? closeCallback() : close()) }
         );
         dialogueText.visible = false;
         controls = null;
@@ -122,26 +137,29 @@ class DialogueSubstate extends flixel.FlxSubState
 @:forward
 abstract ZoomDialogueSubstate(DialogueSubstate) to DialogueSubstate
 {
-    inline public function new(dialogue:String, focalPoint:FlxPoint, settings:PlayerSettings, onComplete:()->Void)
+    inline public function new(dialogue:String, focalPoint:FlxPoint, settings:PlayerSettings, player:Player, onComplete:()->Void)
     {
-        final camera = settings.camera;
+        final camera = player.playCamera;
         final oldZoom = camera.zoom;
         final oldCamPos = camera.scroll.copyTo();
-        this = new DialogueSubstate(dialogue, settings.controls, camera, false);
+        this = new DialogueSubstate(dialogue, player.controls, camera, false, 0.25, false);
         
         final zoomAmount = 2;
         final yOffset = (this.blackBarTop.height - this.blackBarBottom.height) / 2 / zoomAmount;
+
         tweenCamera(camera, 0.25, oldZoom * zoomAmount,
-            focalPoint.x - camera.width / 2,
-            focalPoint.y - camera.height / 2 - yOffset,
+            focalPoint.x - FlxG.width / 2,
+            focalPoint.y - FlxG.height / 2 - yOffset,
             (_)->this.start()
         );
+
         focalPoint.putWeak();
         
-        this.closeCallback = function ()
-        {
+        this.closeCallback = function()
+        {   
             tweenCamera(camera, 0.3, oldZoom, oldCamPos.x, oldCamPos.y, (_)->onComplete());
             oldCamPos.put();
+            this.close();
         };
     }
     
@@ -156,8 +174,8 @@ abstract ZoomDialogueSubstate(DialogueSubstate) to DialogueSubstate
             rect = new FlxRect();
         
         rect.y = this.blackBarTop.height;
-        rect.width = this.uiCamera.width;
-        rect.height = this.uiCamera.height - this.blackBarBottom.height;
+        rect.width = FlxG.width;
+        rect.height = FlxG.height - this.blackBarBottom.height;
         return rect;
     }
 }

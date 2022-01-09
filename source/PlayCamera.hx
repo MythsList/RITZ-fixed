@@ -3,7 +3,6 @@ package;
 import states.PlayState;
 import data.OgmoTilemap;
 import props.Player;
-
 import flixel.FlxG;
 import flixel.FlxCamera;
 import flixel.FlxObject;
@@ -73,6 +72,7 @@ class PlayCamera extends FlxCamera
 		resetDeadZones();
 		focusOn(player.getPosition());
 		leadOffset = camYLeadAmount = -TILE_SIZE;
+		//player.updateCamera = false;
 		return this;
 	}
 
@@ -129,8 +129,8 @@ class PlayCamera extends FlxCamera
 			{
 				mode = newMode;
 				updateDeadzone();
-				
-				if (oldMode == Air || newMode == Ground)//if just landed
+
+				if (oldMode == Air || newMode == Ground) //if just landed
 				{
 					// Compute the amount of y dis to move the camera
 					targetOffset.y = leadOffset + panOffset;
@@ -207,6 +207,7 @@ class PlayCamera extends FlxCamera
 			if (leadOffset < camYLeadAmount)
 			{
 				leadOffset += speed * elapsed;
+
 				if (leadOffset > camYLeadAmount)// bound
 					leadOffset = camYLeadAmount;
 			}

@@ -5,9 +5,11 @@ import flixel.FlxG;
 class Main extends openfl.display.Sprite
 {
 	inline static var SCALE:Int = 2;
+	
 	public function new()
 	{
 		super();
+		
 		addChild(
 			new beat.BeatGame(
 				Std.int(stage.stageWidth / SCALE),

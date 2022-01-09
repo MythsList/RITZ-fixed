@@ -152,8 +152,14 @@ class Player extends FlxSprite
         maxVelocity.y = FALL_SPEED;
     }
     
-    function initCamera():Void
+    public function initCamera():Void
     {
+        if (FlxG.cameras.list.contains(playCamera) && FlxCamera.defaultCameras.contains(playCamera))
+        {
+            FlxG.cameras.remove(playCamera);
+            FlxCamera.defaultCameras.remove(playCamera);
+        }
+
         playCamera = new PlayCamera();
         playCamera.init(this);
         
@@ -170,6 +176,7 @@ class Player extends FlxSprite
     {
         for (c in cheese)
             c.resetToSpawn();
+
         cheese.clear();
         
         state = Respawning;
@@ -192,6 +199,7 @@ class Player extends FlxSprite
     override public function update(elapsed:Float):Void
     {
         tail.holdTail = false;
+
         switch (state)
         {
             case Won:
@@ -687,7 +695,6 @@ class Player extends FlxSprite
     {
         if (controls.JUMP && !apexReached)
         {
-            
             if (!jumped)
             {
                 velocity.y = 0;
@@ -717,14 +724,11 @@ class Player extends FlxSprite
 
             var C = FlxMath.fastCos(10.7 * jumpBoost * FlxG.elapsed);
             FlxG.watch.addQuick('Cos', C);
+
             if (C < 0)
-            {
                 apexReached = true;
-            }
             else
-            {
                 velocity.y -= C * (baseJumpStrength * 1.6) * 2;
-            }
         }
     }
     
@@ -744,8 +748,13 @@ class Player extends FlxSprite
     override function destroy()
     {
         super.destroy();
-        FlxG.cameras.remove(playCamera);
-        FlxCamera.defaultCameras.remove(playCamera);
+
+        if (FlxG.cameras.list.contains(playCamera) && FlxCamera.defaultCameras.contains(playCamera))
+        {
+            FlxG.cameras.remove(playCamera);
+            FlxCamera.defaultCameras.remove(playCamera);
+        }
+
         if (settings != null)
         {
             PlayerSettings.removeAvatar(this);

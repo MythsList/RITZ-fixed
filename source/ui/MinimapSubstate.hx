@@ -4,7 +4,6 @@ import data.PlayerSettings;
 import props.Player;
 import ui.Minimap;
 import ui.Prompt;
-
 import flixel.FlxCamera;
 import flixel.FlxG;
 import flixel.FlxSprite;
@@ -25,18 +24,21 @@ class MinimapSubstate extends flixel.FlxSubState
     final travelCallback:(x:Float, y:Float)->Void;
     final controls:Controls;
     
-    public function new (map:Minimap, player:Player, travelCallback)
+    public function new(map:Minimap, player:Player, travelCallback)
     {
         this.map = map;
         this.travelCallback = travelCallback;
+
         controls = player.controls;
+
         super();
         
         var bg = new FlxSprite().makeGraphic(FlxG.camera.width, FlxG.camera.height, 0xFFaad6e6);
         bg.scrollFactor.set();
+
         add(bg);
         add(map);
-        add(cursor = new MapCursor(player.x, player.y, map, controls));
+        add(cursor = new MapCursor(player.x, player.y, map));
         
         mapCamera = new FlxCamera(0, 0, FlxG.camera.width, FlxG.camera.height, FlxG.camera.zoom);
         mapCamera.bgColor = 0xFFaad6e6;
@@ -112,6 +114,7 @@ class MapCursor extends flixel.FlxSprite
         x = value * TILE_SIZE;
         return tileX = value;
     }
+
     public var tileY(default, set):Int;
     inline function set_tileY(value:Int)
     {
@@ -119,16 +122,15 @@ class MapCursor extends flixel.FlxSprite
         return tileY = value;
     }
     
-    var timer = 0.0;
+    var timer:Float = 0.0;
     
     final map:Minimap;
-    final controls:Controls;
     
-    public function new (x = 0.0, y = 0.0, map:Minimap, controls:Controls)
+    public function new(x = 0.0, y = 0.0, map:Minimap)
     {
         this.map = map;
-        this.controls = controls;
-        super("assets/images/mapCursor.png");
+        super("assets/images/map_cursor.png");
+
         tileX = Math.floor(x / Minimap.OLD_TILE_SIZE);
         tileY = Math.floor(y / Minimap.OLD_TILE_SIZE);
         
@@ -144,26 +146,41 @@ class MapCursor extends flixel.FlxSprite
         
         timer -= elapsed;
         
-        var moveX = 0;
-        var moveY = 0;
-        final pressedX = (controls.RIGHT ? 1 : 0) - (controls.LEFT ? 1 : 0);
-        final pressedY = (controls.DOWN  ? 1 : 0) - (controls.UP   ? 1 : 0);
+        var moveX:Int = 0;
+        var moveY:Int = 0;
+
+        var pressedX:Int = 0;
+        var pressedY:Int = 0;
+
+        if (FlxG.keys.anyPressed([LEFT, A]) && !FlxG.keys.anyPressed([RIGHT, D]))
+            pressedX = -1;
+        else if (FlxG.keys.anyPressed([RIGHT, D]) && !FlxG.keys.anyPressed([LEFT, A]))
+            pressedX = 1;
+        else
+            pressedX = 0;
+
+        if (FlxG.keys.anyPressed([UP, W]) && !FlxG.keys.anyPressed([DOWN, S]))
+            pressedY = -1;
+        else if (FlxG.keys.anyPressed([DOWN, S]) && !FlxG.keys.anyPressed([UP, W]))
+            pressedY = 1;
+        else
+            pressedY = 0;
         
         // Always Move if just pressed
-        if (pressedX != 0 && controls.LEFT_P || controls.RIGHT_P)
+        if (pressedX != 0 && (FlxG.keys.anyJustPressed([LEFT, A]) && FlxG.keys.anyJustPressed([RIGHT, D])))
         {
             timer = FIRST_MOVE_RATE;
             moveX = pressedX;
         }
         
         // Always Move if just pressed
-        if (pressedY != 0 && controls.UP_P || controls.DOWN_P)
+        if (pressedY != 0 && (FlxG.keys.anyJustPressed([UP, W]) && FlxG.keys.anyJustPressed([DOWN, S])))
         {
             timer = FIRST_MOVE_RATE;
             moveY = pressedY;
         }
         
-        // Move if the button was held long enough without the the cursor moving
+        // Move if the button was held long enough without the cursor moving
         if (moveX == 0 && moveY == 0 && timer <= 0)
         {
             timer = Math.max(timer, MOVE_RATE);
@@ -179,7 +196,7 @@ class MapCursor extends flixel.FlxSprite
             y = tileY * TILE_SIZE;
         }
         
-        visible = timer > MOVE_RATE || (MOVE_RATE - timer) % BLINK_RATE < BLINK_RATE / 2;
+        visible = (timer > MOVE_RATE) || ((MOVE_RATE - timer) % BLINK_RATE < BLINK_RATE / 2);
     }
 }
 
@@ -193,15 +210,17 @@ class InputHelp extends FlxSprite
     public var movement:FlxRect;
     public var showTimer = TOTAL_TIME;
     
-    public function new (?movement:FlxRect):Void
+    public function new(?movement:FlxRect):Void
     {
         super();
         autoLoadGraphic();
         
         if (movement == null)
             movement = FlxRect.get((FlxG.width - width) / 2, -height, 0, height);
+
         x = movement.x;
         y = movement.y;
+
         this.movement = movement;
         
         showIntro();

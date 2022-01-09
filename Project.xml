@@ -23,12 +23,13 @@
 	<window if="desktop" orientation="landscape" fullscreen="false" resizable="true" />
 
 	<!--Mobile-specific-->
-	<window if="mobile" orientation="landscape" fullscreen="true" width="0" height="0" />
+	<window if="mobile" orientation="landscape" fullscreen="true" width="0" height="0" resizable="false" />
 
 	<!-- _____________________________ Path Settings ____________________________ -->
 
 	<set name="BUILD_DIR" value="export/debug" if="debug" />
 	<set name="BUILD_DIR" value="export/release" unless="debug" />
+	<set name="BUILD_DIR" value="export/32bit" if="32bit" />
 	
 	<classpath name="source" />
 	<assets path="assets" exclude="*.mp3|*.ase|*.aseprite" if="desktop"/>
@@ -96,5 +97,8 @@
 	</section>
 	
 	<!--Place custom nodes like icons here (higher priority to override the HaxeFlixel icon)-->
-	<icon path="assets/images/icon.png" />
+	<icon path="assets/images/icon16.png" size="16"/>
+	<icon path="assets/images/icon32.png" size="32"/>
+	<icon path="assets/images/icon32.png" />
+	
 </project>

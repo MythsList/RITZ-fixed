@@ -10,10 +10,7 @@ import flixel.group.FlxSpriteGroup;
 
 class MenuItem extends FlxSpriteGroup
 {
-    public var daAngle:Float = 0;
-    public var daAngleOffset:Float = 30;
-    public var targetAngle:Float = 0;
-    var angleSpeed:Float = 0;
+    public var targetY:Float = 0;
 
     public var itemType:Int = 0;
 
@@ -35,6 +32,7 @@ class MenuItem extends FlxSpriteGroup
     {
         this.controls = controls;
         super(x, y);
+
         var textBG:FlxSprite = new FlxSprite().loadGraphic('assets/images/ui/main_menu/bar.png');
 
         this.itemType = itemType;
@@ -59,7 +57,7 @@ class MenuItem extends FlxSpriteGroup
 
         if (itemType == TOGGLE)
         {
-            txtOff = new BitmapText(130, 0, "OFF");
+            txtOff = new BitmapText(130, 0, 'OFF');
             add(txtOff);
 
             txtOn = new BitmapText(180, 0, 'ON');
@@ -68,12 +66,10 @@ class MenuItem extends FlxSpriteGroup
             if (initValue != null)
                 isOn = initValue;
         }
-
-        angleSpeed = 11 * 0.0166;
     }
 
-    
-    override function update(elapsed:Float) {
+    override function update(elapsed:Float)
+    {
         super.update(elapsed);
 
         if (isSelected)
@@ -93,9 +89,7 @@ class MenuItem extends FlxSpriteGroup
             if (itemType == TOGGLE)
             {
                 if (controls.ACCEPT)
-                {
                     isOn = !isOn;
-                }
             }
         }
 
@@ -103,32 +97,16 @@ class MenuItem extends FlxSpriteGroup
         
         if (itemType == TOGGLE)
         {
-
             txtOff.color = txtOn.color = FlxColor.WHITE;
+            toggleOffset = (isOn ? 4 : 0);
 
             if (isOn)
-            {
                 txtOff.color = 0xFF928fb8;
-                toggleOffset = 4;
-            }
             else
-            {
                 txtOn.color = 0xFF928fb8;
-            }
-                
         }
-        
 
-        
-
-        x = 330 + Math.cos(FlxAngle.asRadians((daAngle * daAngleOffset) + 180)) * 330;
-        y = 140 + Math.sin(FlxAngle.asRadians((daAngle * daAngleOffset)+ 180)) * 140;
-
-        
-        if (targetAngle > daAngle)
-            daAngle += angleSpeed;
-        if (targetAngle < daAngle)
-            daAngle -= angleSpeed;
-
+        x = 20;
+        y = FlxMath.lerp(y, (FlxG.height / 2) + (targetY * 60) - 4, 0.16);
     }
 }

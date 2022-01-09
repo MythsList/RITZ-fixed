@@ -2,7 +2,6 @@ package data;
 
 import props.Player;
 import data.OgmoTilemap;
-
 import flixel.group.FlxGroup;
 
 class Level extends FlxGroup
