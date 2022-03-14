@@ -6,8 +6,8 @@ class RaceState extends PlayState
     var fileSuffix:String = '.json';
 
     public static var LEVEL_PATH:Array<String> = [
-        'raceStart0',
-        'raceStart0',
+        //'raceStart0',
+        //'raceStart0',
         'raceStart0'
     ];
 

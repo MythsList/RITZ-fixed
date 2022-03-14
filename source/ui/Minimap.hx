@@ -32,11 +32,13 @@ class Minimap extends flixel.group.FlxGroup
     final map:MiniTilemap;
     final fog:FlxTilemap;
     
-    public function new (levelPath:String)
+    public function new(levelPath:String)
     {
         super(2);
+
         add(map = new MiniTilemap(levelPath, cheese, checkpoints));
         add(fog = new FlxTilemap());
+
         fog.loadMapFromArray
             ( [for (i in 0...map.totalTiles) 1]
             , map.widthInTiles, map.heightInTiles
